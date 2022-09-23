@@ -176,7 +176,57 @@ class _HomePageState extends State<HomePage> {
 
 
   }
+  void showWaitWindow(BuildContext context,String body) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        content:  Row(
+            children:
+            [
+            FutureBuilder<http.Response>(
+              future: postMakeCocktail(body),
+              builder: (context,snapshot){
+                if (snapshot.hasData){
+                  String? str = snapshot.data?.body;
+                  return Text(str!);
+                }
 
+                  return CircularProgressIndicator();
+
+              },
+            )
+  ]
+        ),
+          actions: <TextButton>[
+      TextButton(
+      onPressed: () {
+    Navigator.pop(context);
+    },
+      child: const Text('Close'),
+    )
+    ],
+      ),
+    );
+  }
+  Future<void> makeCocktail(List cocktail) async {
+    List request = [] ;
+    String pumpConfRaw = await readFile("pumpConf.json");
+    if (pumpConfRaw == "noData"){
+      final String _temp = await rootBundle.loadString('assets/pumpConf.json');
+      writeFile("pumpConf.json", _temp);
+      pumpConfRaw = await readFile("pumpConf.json");
+    }
+    final pumpConf = await json.decode(pumpConfRaw);
+
+    for (var ingredient in cocktail){
+      int pump = pumpConf.indexOf(ingredient["name"])+1 ;
+      request.add([pump,ingredient["volume"]]);
+    }
+
+    print(request);
+    print(cocktail);
+   showWaitWindow(context, json.encode(request));
+  }
   void _pushEx(final cocktail) {
 
 
@@ -189,8 +239,15 @@ class _HomePageState extends State<HomePage> {
           appBar:AppBar(
             title: Text(info),
           ),
+          floatingActionButton: FloatingActionButton(
+            child: Icon(Icons.navigation),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            onPressed: () => makeCocktail(cocktail["igredients"]),
+          ),
           body: Column(
               children:[
+
 
                 // Display the data loaded from sample.json
                 cocktail["igredients"].isNotEmpty
@@ -208,11 +265,15 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     },
+
                   ),
+
                 )
-                    : Container()
+                    : Container(),
+
               ],
           ),
+
         );
       }),
     );
