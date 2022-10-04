@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:cocktail_json_based/io.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -9,7 +7,7 @@ import 'nework.dart';
 import 'package:http/http.dart' as http;
 import 'dropown.dart';
 import 'io.dart';
-
+import 'package:wifi_iot/wifi_iot.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -51,14 +49,30 @@ class _HomePageState extends State<HomePage> {
       _items = data;
     });
   }
+  Future<bool> connectWifi() async {
+    var ssid = await  WiFiForIoTPlugin.getSSID();
+    if (ssid != "Cocktail"){
+      final connect =  await WiFiForIoTPlugin.connect("Cocktail");
+      if (connect == true){
+        return true;
+      }
+    }
+    else{
+      return true;
+    }
 
+    return false;
+  }
   void showModal(BuildContext context) {
+
     showDialog(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        content: Center(
+      builder: (BuildContext context) =>  AlertDialog(
+        content:  Center(
           child: DropdownButtonExample(),
-        ),
+
+          ),
+
         actions: <TextButton>[
           TextButton(
             onPressed: () {
@@ -127,11 +141,21 @@ class _HomePageState extends State<HomePage> {
               onTap: _onItemTapped,
               currentIndex: 0,
             ),
+
             appBar: AppBar(
               centerTitle: true,
               title: const Text(
                 'Cocktail',
               ),
+              actions:<Widget> [
+            IconButton(
+            icon: const Icon(Icons.add_alert),
+            tooltip: 'Show Snackbar',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('This is a snackbar')));
+            },)
+              ],
             ),
             body: Padding(
               padding: const EdgeInsets.all(25),
@@ -227,6 +251,11 @@ class _HomePageState extends State<HomePage> {
     print(cocktail);
    showWaitWindow(context, json.encode(request));
   }
+
+  void equal(int index){
+
+  }
+
   void _pushEx(final cocktail) {
 
 
@@ -245,22 +274,41 @@ class _HomePageState extends State<HomePage> {
             foregroundColor: Colors.white,
             onPressed: () => makeCocktail(cocktail["igredients"]),
           ),
+
           body: Column(
               children:[
 
 
                 // Display the data loaded from sample.json
-                cocktail["igredients"].isNotEmpty
-                    ? Expanded(
+                if (cocktail["igredients"].isNotEmpty) Expanded(
                   child: ListView.builder(
+
                     itemCount: cocktail["igredients"].length,
                     itemBuilder: (context, index) {
+                      final  defaut =  cocktail["igredients"][index]["volume"];
+                      final myController = TextEditingController(text: cocktail["igredients"][index]["volume"].toString());
+
                       return Card(
+
                         margin: const EdgeInsets.all(10),
                         child: ListTile(
                           leading: Text(cocktail["igredients"][index]["name"]),
-                          title: Text(cocktail["igredients"][index]["volume"].toString()+" ml"),
-                          // subtitle: Text(_items[index]["name"]),
+                          //title: Text(cocktail["igredients"][index]["volume"].toString()+" ml"),
+                           title:     TextField(
+                             controller:myController,
+                             onChanged:(_){
+                               if(myController.text.isNotEmpty && int.parse(myController.text.toString()) <900 ){
+                                 cocktail["igredients"][index]["volume"] = int.parse(myController.text.toString());
+                               }else{
+                                 cocktail["igredients"][index]["volume"] = defaut;
+                               }
+                                return;
+                             },
+                             keyboardType: TextInputType.number,
+                             inputFormatters: <TextInputFormatter>[
+                               FilteringTextInputFormatter.digitsOnly
+                             ], // Only numbers can be entered
+                           ),
 
                         ),
                       );
@@ -268,8 +316,7 @@ class _HomePageState extends State<HomePage> {
 
                   ),
 
-                )
-                    : Container(),
+                ) else Container(),
 
               ],
           ),

@@ -38,6 +38,8 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^0.13.5
   path_provider: ^2.0.11
+  wifi_iot: ^0.3.17
+
 
 
 dev_dependencies:
